@@ -1,101 +1,98 @@
 <template>
   <AdminLayout>
     <div class="p-6">
-      <!-- Page header -->
+      <!-- HEADER: title | search | sort | actions -->
       <div class="mb-6">
-        <div class="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm flex items-center justify-between">
-          <div class="flex items-center gap-4">
-            <h2 class="text-lg font-semibold">Deals Pipeline</h2>
-
-            <div class="relative w-[420px]">
-              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                <SearchIcon class="w-4 h-4" />
-              </span>
-              <input v-model="q" type="search" placeholder="Search for deals..." class="w-full h-10 rounded-lg border border-gray-200 px-4 pl-10 text-sm placeholder:text-slate-400 focus:outline-none" />
-            </div>
-
-            <div class="text-sm text-slate-500">Sort by:</div>
-            <select v-model="sortBy" class="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm">
-              <option value="owner">Owner</option>
-              <option value="value_desc">Value (high → low)</option>
-              <option value="value_asc">Value (low → high)</option>
-              <option value="date">Date</option>
-            </select>
+        <div class="header-card grid grid-cols-3 items-center gap-4 px-5 py-4">
+          <!-- title -->
+          <div class="col-span-1">
+            <h2 class="text-2xl font-semibold">Deals Pipeline</h2>
           </div>
 
-          <div class="flex items-center gap-3">
-            <button @click="openAdd" class="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-white text-sm font-medium hover:bg-emerald-600 shadow">
-              + Add Deal
-            </button>
-            <button @click="resetDemo" class="px-3 py-2 rounded-lg border text-sm">Reset Demo</button>
+          <!-- search + sort (center) -->
+          <div class="col-span-1 flex items-center justify-center">
+            <div class="relative w-full max-w-[720px]">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                <SearchIcon class="w-4 h-4" />
+              </span>
+              <input
+                v-model="q"
+                type="search"
+                placeholder="Search for deals..."
+                class="w-full h-11 rounded-lg border border-gray-200 px-4 pl-11 text-sm placeholder:text-slate-400 focus:outline-none"
+              />
+            </div>
+
+            <div class="ml-4 hidden md:flex items-center gap-2">
+              <div class="text-sm text-slate-500">Sort by:</div>
+              <select v-model="sortBy" class="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm">
+                <option value="owner">Owner</option>
+                <option value="value_desc">Value (high → low)</option>
+                <option value="value_asc">Value (low → high)</option>
+                <option value="date">Date</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- actions -->
+          <div class="col-span-1 flex items-center justify-end gap-3">
+            <button @click="openAdd" class="btn-primary">+ Add Deal</button>
+            <button @click="resetDemo" class="btn-ghost">Reset Demo</button>
           </div>
         </div>
       </div>
 
-      <!-- Kanban -->
-      <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        <div
-          v-for="(col, idx) in columns"
-          :key="col.key"
-          class="bg-transparent"
-        >
-          <div class="rounded-xl p-4 mb-3"
-               :class="['shadow-sm', 'border', 'border-gray-100', 'bg-white']">
-            <div class="flex items-center justify-between gap-3">
+      <!-- KANBAN GRID (no horizontal scroll by default) -->
+      <div class="kanban-wrap-grid">
+        <div class="kanban-grid" :style="`--cols: ${columns.length}`">
+          <div v-for="col in columns" :key="col.key" class="column">
+            <!-- column header -->
+            <div class="col-header">
               <div>
-                <div class="text-sm font-semibold text-slate-700">{{ col.title }}</div>
-                <div class="text-xs text-slate-400 mt-1">{{ formatCurrency(colTotal(col.key)) }} • {{ colCount(col.key) }} Deals</div>
+                <div class="col-title">{{ col.title }}</div>
+                <div class="col-sub">{{ formatCurrency(colTotal(col.key)) }} • {{ colCount(col.key) }} Deals</div>
               </div>
-              <div class="text-xs text-slate-400">{{ col.badge }}</div>
             </div>
-          </div>
 
-          <!-- drop zone -->
-          <div
-            class="min-h-[200px] p-2 rounded-xl"
-            :class="['bg-slate-50', isDragOver[col.key] ? 'ring-2 ring-sky-300' : '']"
-            @dragover.prevent
-            @dragenter.prevent="onDragEnter(col.key)"
-            @dragleave.prevent="onDragLeave(col.key)"
-            @drop.prevent="onDrop(col.key)"
-          >
-            <div class="space-y-3">
-              <div
-                v-for="deal in dealsByColumn(col.key)"
-                :key="deal.id"
-                class="bg-white border border-gray-100 rounded-lg p-3 shadow-sm cursor-grab"
-                draggable="true"
-                @dragstart="onDragStart(deal.id)"
-                @dragend="onDragEnd"
-              >
-                <div class="flex items-start justify-between gap-3">
-                  <div class="flex-1">
-                    <div class="flex items-center gap-2">
-                      <h4 class="font-medium text-slate-800 truncate">{{ deal.title }}</h4>
-                      <span v-if="deal.flag" class="text-xs text-white bg-indigo-600 px-2 py-0.5 rounded">{{ deal.flag }}</span>
-                    </div>
-                    <div class="text-xs text-slate-500 mt-1">{{ formatCurrency(deal.value) }} • {{ deal.date }}</div>
+            <!-- draggable list for each column -->
+            <draggable
+              v-model="columnsMap[col.key]"
+              group="deals"
+              item-key="id"
+              :animation="200"
+              class="col-list"
+              @change="onDragChange"
+            >
+              <template #item="{ element: deal }">
+                <div class="card" @dblclick="openDeal(deal)">
+                  <div class="card-body">
+                    <div class="card-left">
+                      <h4 class="card-title" :title="deal.title">{{ deal.title }}</h4>
+                      <div class="card-meta">
+                        <div class="meta-left">{{ formatCurrency(deal.value) }} • {{ deal.date }}</div>
+                        <div class="meta-right">{{ shortValue(deal.value) }}</div>
+                      </div>
 
-                    <div class="mt-3 flex items-center gap-3">
-                      <img :src="deal.ownerAvatar" class="w-7 h-7 rounded-full object-cover border" />
-                      <div class="text-xs text-slate-500">
-                        <div class="font-medium text-slate-700">{{ deal.owner }}</div>
-                        <div>{{ deal.company }}</div>
+                      <div class="card-owner mt-3">
+                        <img :src="deal.ownerAvatar" class="owner-avatar" />
+                        <div class="owner-info">
+                          <div class="owner-name">{{ deal.owner }}</div>
+                          <div class="owner-company">{{ deal.company }}</div>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div class="text-right">
-                    <div class="text-sm font-semibold text-slate-800">{{ shortValue(deal.value) }}</div>
-                    <div class="text-xs text-slate-400 mt-2">
-                      <button class="px-2 py-1 rounded border text-xs" @click.stop="openDeal(deal)">View</button>
+                    <div class="card-action">
+                      <button class="view-btn" @click.stop="openDeal(deal)">View</button>
                     </div>
                   </div>
                 </div>
-              </div>
+              </template>
 
-              <div v-if="dealsByColumn(col.key).length === 0" class="py-6 text-center text-slate-400">No deals</div>
-            </div>
+              <template #footer>
+                <div v-if="columnsMap[col.key].length === 0" class="col-empty">No deals</div>
+              </template>
+            </draggable>
           </div>
         </div>
       </div>
@@ -163,7 +160,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
+import draggable from 'vuedraggable'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import SearchIcon from '@/icons/SearchIcon.vue'
 
@@ -180,31 +178,37 @@ const columns = [
 const initialDeals = [
   { id: 101, title: 'Managing sales team meeting', value: 87000, date: '2022-01-01', owner: 'Anna', ownerAvatar: 'https://i.pravatar.cc/64?img=21', company: 'Nesta Technologies', stage: 'canvassing', flag: '', note: '<p>Details meeting with team</p>' },
   { id: 102, title: 'Airbnb React Development', value: 20300, date: '2021-12-24', owner: 'Budi', ownerAvatar: 'https://i.pravatar.cc/64?img=32', company: 'Startup A', stage: 'canvassing', flag: 'Hot', note: '' },
-  { id: 201, title: 'Custom Mobile Apps', value: 28700, date: '2021-12-13', owner: 'Kevin', ownerAvatar: 'https://i.pravatar.cc/64?img=5', company: 'Digital Co', stage: 'qualification', flag: '', note: '' },
-  { id: 301, title: 'Art Studio Design', value: 147500, date: '2021-09-24', owner: 'Siti', ownerAvatar: 'https://i.pravatar.cc/64?img=7', company: 'DesignX', stage: 'quotation', flag: '', note: '' },
-  { id: 401, title: 'SASS app workflow diagram', value: 17800, date: '2022-01-01', owner: 'James', ownerAvatar: 'https://i.pravatar.cc/64?img=12', company: 'DevWorks', stage: 'negotiation', flag: '', note: '' },
-  { id: 501, title: 'Coupon Website', value: 27400, date: '2021-01-07', owner: 'Riana', ownerAvatar: 'https://i.pravatar.cc/64?img=9', company: 'eCom', stage: 'offer_accepted', flag: '', note: '' },
-  // more items for demo
   { id: 103, title: 'Discovery Capital', value: 124300, date: '2021-12-29', owner: 'Alex', ownerAvatar: 'https://i.pravatar.cc/64?img=8', company: 'VC Fund', stage: 'canvassing', flag: 'VIP', note: 'Important investor' },
+
+  { id: 201, title: 'Custom Mobile Apps', value: 28700, date: '2021-12-13', owner: 'Kevin', ownerAvatar: 'https://i.pravatar.cc/64?img=5', company: 'Digital Co', stage: 'qualification', flag: '', note: '' },
+  { id: 202, title: 'Managing sales team meeting', value: 87000, date: '2022-01-01', owner: 'Anna', ownerAvatar: 'https://i.pravatar.cc/64?img=21', company: 'Nesta Technologies', stage: 'qualification', flag: '', note: '' },
+
+  { id: 301, title: 'Art Studio Design', value: 147500, date: '2021-09-24', owner: 'Siti', ownerAvatar: 'https://i.pravatar.cc/64?img=7', company: 'DesignX', stage: 'quotation', flag: '', note: '' },
   { id: 302, title: 'Modern Design', value: 23000, date: '2021-10-03', owner: 'Dina', ownerAvatar: 'https://i.pravatar.cc/64?img=14', company: 'BrandCo', stage: 'quotation', flag: '', note: '' },
+
+  { id: 401, title: 'SASS app workflow diagram', value: 17800, date: '2022-01-01', owner: 'James', ownerAvatar: 'https://i.pravatar.cc/64?img=12', company: 'DevWorks', stage: 'negotiation', flag: '', note: '' },
+
+  { id: 501, title: 'Coupon Website', value: 27400, date: '2021-01-07', owner: 'Riana', ownerAvatar: 'https://i.pravatar.cc/64?img=9', company: 'eCom', stage: 'offer_accepted', flag: '', note: '' },
   { id: 502, title: 'Marketing Automation Demo', value: 94800, date: '2021-11-19', owner: 'Haryo', ownerAvatar: 'https://i.pravatar.cc/64?img=15', company: 'Marcom', stage: 'offer_accepted', flag: '', note: '' },
 ]
 
-const deals = ref(JSON.parse(JSON.stringify(initialDeals))) // reactive array
+/* reactive deals store */
+const deals = ref(JSON.parse(JSON.stringify(initialDeals)))
 
-/* ---------- UI state ---------- */
+/* columnsMap: stageKey -> array (vuedraggable v-model) */
+const columnsMap = reactive({})
+function rebuildColumnsMap() {
+  for (const c of columns) {
+    columnsMap[c.key] = deals.value.filter(d => d.stage === c.key)
+  }
+}
+rebuildColumnsMap()
+
+/* UI state */
 const q = ref('')
 const sortBy = ref('owner')
-const draggingId = ref(null)
-const isDragOver = reactive({
-  canvassing: false,
-  qualification: false,
-  quotation: false,
-  negotiation: false,
-  offer_accepted: false
-})
 
-/* modals + draft */
+/* modals & draft */
 const modal = ref(null)
 const viewModal = ref(null)
 const draft = reactive({
@@ -219,36 +223,17 @@ const draft = reactive({
 })
 const selectedDeal = ref(null)
 
-/* ---------- helpers ---------- */
-function dealsByColumn(stageKey) {
-  const list = deals.value.filter(d => d.stage === stageKey && matchesQuery(d))
-  // sorting
-  if (sortBy.value === 'value_desc') return list.sort((a,b) => b.value - a.value)
-  if (sortBy.value === 'value_asc') return list.sort((a,b) => a.value - b.value)
-  if (sortBy.value === 'date') return list.sort((a,b) => new Date(b.date) - new Date(a.date))
-  return list.sort((a,b) => a.owner.localeCompare(b.owner))
-}
-
-function matchesQuery(d) {
-  const s = q.value.trim().toLowerCase()
-  if (!s) return true
-  return (d.title && d.title.toLowerCase().includes(s)) ||
-         (d.company && d.company.toLowerCase().includes(s)) ||
-         (d.owner && d.owner.toLowerCase().includes(s))
-}
-
+/* helpers */
 function colTotal(stageKey) {
-  return deals.value.filter(d => d.stage === stageKey).reduce((s, d) => s + (Number(d.value)||0), 0)
+  return deals.value.filter(d => d.stage === stageKey).reduce((s,d) => s + (Number(d.value)||0), 0)
 }
 function colCount(stageKey) {
   return deals.value.filter(d => d.stage === stageKey).length
 }
-
 function formatCurrency(val = 0) {
-  // show in IDR style with suffix k for thousands (basic)
+  if (!val) return 'Rp 0'
   if (val >= 1000) {
-    // show as 147.5k etc (thousands)
-    const v = Math.round(val / 100) / 10 // one decimal in thousands e.g., 147.5
+    const v = Math.round(val / 100) / 10
     return `Rp ${v}k`
   }
   return `Rp ${val}`
@@ -259,32 +244,24 @@ function shortValue(val = 0) {
   return `Rp ${val}`
 }
 
-/* ---------- drag & drop ---------- */
-function onDragStart(id) {
-  draggingId.value = id
-}
-function onDragEnd() {
-  draggingId.value = null
-  // clear dragOver states
-  Object.keys(isDragOver).forEach(k => isDragOver[k] = false)
-}
-function onDragEnter(colKey) {
-  isDragOver[colKey] = true
-}
-function onDragLeave(colKey) {
-  isDragOver[colKey] = false
-}
-function onDrop(colKey) {
-  if (!draggingId.value) return
-  const idx = deals.value.findIndex(d => d.id === draggingId.value)
-  if (idx === -1) return
-  deals.value[idx].stage = colKey
-  // optional: change date to today
-  // deals.value[idx].date = new Date().toISOString().slice(0,10)
-  onDragEnd()
+/* draggable change: rebuild master list and update stages */
+function onDragChange(evt) {
+  const updated = []
+  for (const c of columns) {
+    const arr = columnsMap[c.key] || []
+    for (const item of arr) {
+      item.stage = c.key
+      updated.push(item)
+    }
+  }
+  // append any missing items
+  const others = deals.value.filter(d => !updated.find(u => u.id === d.id))
+  deals.value = updated.concat(others)
+  rebuildColumnsMap()
+  // TODO: persist to API here (PATCH /deals/:id)
 }
 
-/* ---------- create / view ---------- */
+/* create / view / misc */
 function openAdd() {
   draft.title = ''
   draft.company = ''
@@ -297,25 +274,20 @@ function openAdd() {
   modal.value?.showModal?.()
 }
 function closeModal() { modal.value?.close?.() }
-
 function createDeal() {
   if (!draft.title || !draft.company) {
     alert('Title & company required')
     return
   }
   const id = Math.floor(Math.random() * 1000000)
-  deals.value.unshift({
-    id,
-    title: draft.title,
-    company: draft.company,
-    value: Number(draft.value) || 0,
-    date: draft.date,
-    owner: draft.owner || 'Unassigned',
-    ownerAvatar: draft.ownerAvatar,
-    stage: draft.stage,
-    flag: '',
-    note: draft.note
-  })
+  const newDeal = {
+    id, title: draft.title, company: draft.company,
+    value: Number(draft.value)||0, date: draft.date,
+    owner: draft.owner || 'Unassigned', ownerAvatar: draft.ownerAvatar,
+    stage: draft.stage, flag: '', note: draft.note
+  }
+  deals.value.unshift(newDeal)
+  rebuildColumnsMap()
   closeModal()
 }
 
@@ -324,26 +296,115 @@ function openDeal(deal) {
   viewModal.value?.showModal?.()
 }
 function closeView() { viewModal.value?.close?.() }
-
 function markWon(deal) {
   if (!deal) return
   deal.stage = 'offer_accepted'
-  alert(`Deal "${deal.title}" marked as Won.`)
+  rebuildColumnsMap()
   closeView()
 }
 
-/* demo helpers */
 function resetDemo() {
   deals.value = JSON.parse(JSON.stringify(initialDeals))
+  rebuildColumnsMap()
 }
 
-/* mount */
 onMounted(() => {
-  // nothing special; refs bound in template
+  rebuildColumnsMap()
 })
 </script>
 
 <style scoped>
-/* tweak scrollbar inside columns */
-.max-h-96::-webkit-scrollbar { height: 6px; width: 6px; }
+/* theme buttons */
+.btn-primary { background:#10b981; color:white; padding:.6rem .9rem; border-radius:.6rem; font-weight:600; box-shadow:0 1px 0 rgba(0,0,0,0.04); }
+.btn-ghost { background:white; padding:.5rem .8rem; border-radius:.6rem; border:1px solid #e6e9ee; }
+
+/* header card */
+.header-card {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #eef1f6;
+  box-shadow: 0 6px 18px rgba(28, 42, 66, 0.04);
+}
+
+/* ----- GRID LAYOUT (no horizontal scroll) ----- */
+.kanban-wrap-grid {
+  width: 100%;
+  padding-bottom: 12px;
+  overflow: visible;
+}
+
+/* dynamic columns based on --cols */
+.kanban-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  align-items: start;
+  width: 100%;
+}
+
+/* column */
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* column header - pill */
+.col-header {
+  background: #fff;
+  border-radius: 10px;
+  padding: 14px;
+  border: 1px solid #eef1f6;
+  box-shadow: 0 4px 12px rgba(28, 42, 66, 0.03);
+}
+.col-title { font-size: 13px; font-weight:700; color:#1f2937; letter-spacing:.5px; }
+.col-sub { font-size:12px; color:#6b7280; margin-top:6px }
+
+/* list area inside column */
+.col-list {
+  min-height: 120px;
+  background: transparent;
+  padding: 6px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+/* card */
+.card {
+  width: 100%;
+  background:white;
+  border-radius:12px;
+  padding:12px;
+  border: 1px solid #eef1f6;
+  box-shadow: 0 6px 18px rgba(28, 42, 66, 0.03);
+  cursor: grab;
+}
+.card-body { display:flex; gap:8px; align-items:flex-start; }
+.card-left { flex:1; min-width:0; }
+.card-title { font-weight:700; color:#0f172a; font-size:15px; line-height:1.1; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.card-meta { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:6px; color:#6b7280; font-size:12px; }
+.meta-right { font-weight:700; color:#0f172a; font-size:12px; }
+
+/* owner row */
+.card-owner { display:flex; align-items:center; gap:8px; margin-top:8px; }
+.owner-avatar { width:34px; height:34px; border-radius:9999px; object-fit:cover; border:1px solid #f1f5f9; }
+.owner-info { font-size:12px; color:#6b7280; }
+.owner-name { font-weight:600; color:#0f172a; font-size:13px; }
+.owner-company { font-size:12px; color:#94a3b8; }
+
+/* action area */
+.card-action { display:flex; align-items:center; margin-left:8px; }
+.view-btn { border: 1px solid #e6e9ee; background:white; color:#374151; padding:6px 8px; border-radius:8px; font-size:12px; }
+
+/* empty area message */
+.col-empty { color:#9aa4b2; text-align:center; padding:14px 0; }
+
+/* responsive: on small screens, stack columns vertically */
+@media (max-width: 900px) {
+  .kanban-grid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+  .header-card { grid-template-columns: 1fr; gap:8px; }
+}
 </style>
