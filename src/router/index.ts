@@ -22,6 +22,12 @@ const router = createRouter({
       meta: { title: 'Contacts', requiresAuth: true },
     },
     {
+      path: '/companies',
+      name: 'Companies',
+      component: () => import('../views/Companies/Companies.vue'),
+      meta: { title: 'Companies', requiresAuth: true },
+    },
+    {
       path: '/calendar',
       name: 'Calendar',
       component: () => import('../views/Others/Calendar.vue'),

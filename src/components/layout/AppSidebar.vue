@@ -255,7 +255,7 @@ const menuGroups = [
       {
         icon: CompaniesIcon,
         name: "Companies",
-        path: "/calendar",
+        path: "/companies",
       },
       {
         icon: MailIcon,
