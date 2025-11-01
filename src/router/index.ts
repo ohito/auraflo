@@ -42,6 +42,42 @@ const router = createRouter({
       meta: { title: 'Deals Pipeline', requiresAuth: true },
     },
     {
+      path: '/leads',
+      name: 'Leads',
+      component: () => import('../views/Leads/Leads.vue'),
+      meta: { title: 'Leads', requiresAuth: true },
+    },
+    {
+      path: '/task-manager',
+      name: 'Task Manager',
+      component: () => import('../views/TaskManager/TaskManager.vue'),
+      meta: { title: 'Task Manager', requiresAuth: true },
+    },
+    {
+      path: '/custom-goals',
+      name: 'Custom Goals',
+      component: () => import('../views/CustomGoals/CustomGoals.vue'),
+      meta: { title: 'Custom Goals', requiresAuth: true },
+    },
+    {
+      path: '/products',
+      name: 'Products',
+      component: () => import('../views/Products/Products.vue'),
+      meta: { title: 'Products', requiresAuth: true },
+    },
+    {
+      path: '/upgrades',
+      name: 'Upgrades',
+      component: () => import('../views/Upgrades/Upgrades.vue'),
+      meta: { title: 'Upgrades', requiresAuth: true },
+    },
+    {
+      path: '/manages',
+      name: 'Manages',
+      component: () => import('../views/Manages/Manages.vue'),
+      meta: { title: 'Manages', requiresAuth: true },
+    },
+    {
       path: '/calendar',
       name: 'Calendar',
       component: () => import('../views/Others/Calendar.vue'),
