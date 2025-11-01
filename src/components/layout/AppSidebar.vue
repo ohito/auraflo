@@ -260,7 +260,7 @@ const menuGroups = [
       {
         icon: MailIcon,
         name: "Email Blast",
-        path: "/calendar",
+        path: "/email-blast",
       },
     ],
   },

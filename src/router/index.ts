@@ -28,6 +28,12 @@ const router = createRouter({
       meta: { title: 'Companies', requiresAuth: true },
     },
     {
+      path: '/email-blast',
+      name: 'Email Blast',
+      component: () => import('../views/Emails/Blasts.vue'),
+      meta: { title: 'Email Blast', requiresAuth: true },
+    },
+    {
       path: '/calendar',
       name: 'Calendar',
       component: () => import('../views/Others/Calendar.vue'),
