@@ -47,10 +47,10 @@
         <div class="kanban-grid" :style="`--cols: ${columns.length}`">
           <div v-for="col in columns" :key="col.key" class="column">
             <!-- column header -->
-            <div class="col-header">
+            <div class="col-header" :style="{ background: col.bg, color: col.text }">
               <div>
-                <div class="col-title">{{ col.title }}</div>
-                <div class="col-sub">{{ formatCurrency(colTotal(col.key)) }} • {{ colCount(col.key) }} Deals</div>
+                <div class="col-title" :style="{ color: col.text }">{{ col.title }}</div>
+                <div class="col-sub" :style="{ color: col.text }">{{ formatCurrency(colTotal(col.key)) }} • {{ colCount(col.key) }} Deals</div>
               </div>
             </div>
 
@@ -64,8 +64,15 @@
               @change="onDragChange"
             >
               <template #item="{ element: deal }">
-                <div class="card" @dblclick="openDeal(deal)">
-                  <div class="card-body">
+                <div class="card" :key="deal.id">
+                  <!-- header area (click to toggle expand, dblclick to open modal) -->
+                  <div
+                    class="card-body"
+                    @click="openDeal(deal)"
+                    @dblclick.stop="openViewModal(deal)"
+                    role="button"
+                    :aria-expanded="expandedId === deal.id"
+                  >
                     <div class="card-left">
                       <h4 class="card-title" :title="deal.title">{{ deal.title }}</h4>
                       <div class="card-meta">
@@ -83,7 +90,37 @@
                     </div>
 
                     <div class="card-action">
-                      <button class="view-btn" @click.stop="openDeal(deal)">View</button>
+                      <button class="view-btn" @click.stop="openViewModal(deal)">View</button>
+                    </div>
+                  </div>
+
+                  <!-- expanded area (visible when expandedId matches) -->
+                  <div v-if="expandedId === deal.id" class="card-expanded">
+                    <div class="expanded-company">
+                      <div class="company-name">{{ deal.company }}</div>
+                      <span class="badge-days">4 Days</span>
+                    </div>
+
+                    <div class="expanded-desc" v-html="getDescription(deal)"></div>
+
+                    <ul class="expanded-activities">
+                      <li class="activity-item">
+                        <div class="activity-title">Meeting with Thomas</div>
+                        <div class="activity-meta">Yesterday at 9:12AM</div>
+                      </li>
+                      <li class="activity-item">
+                        <div class="activity-title">Product Demo</div>
+                        <div class="activity-meta">Monday at 04:41PM</div>
+                      </li>
+                      <li class="activity-item">
+                        <div class="activity-title">Marketing Team Meeting</div>
+                        <div class="activity-meta">Monday at 04:41PM</div>
+                      </li>
+                    </ul>
+
+                    <div class="expanded-actions">
+                      <a :href="`tel:${deal.phone || ''}`" class="btn-call">📞 Call</a>
+                      <button class="btn-message" @click.stop="onMessage(deal)">✉️ Message</button>
                     </div>
                   </div>
                 </div>
@@ -165,13 +202,22 @@ import draggable from 'vuedraggable'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import SearchIcon from '@/icons/SearchIcon.vue'
 
+
+function getDescription(deal) {
+  // jika deal.note ada, pakai itu (anggap sudah HTML-safe)
+  if (deal && deal.note) return deal.note
+  // default string — tulis di sini bebas pakai apostrof
+  return `As a company grows however, you find it's not as easy to shout across`
+}
+
+
 /* ---------- columns definition ---------- */
 const columns = [
-  { key: 'canvassing', title: 'CANVASSING', badge: '' },
-  { key: 'qualification', title: 'QUALIFICATION', badge: '' },
-  { key: 'quotation', title: 'QUOTATION', badge: '' },
-  { key: 'negotiation', title: 'NEGOTIATION', badge: '' },
-  { key: 'offer_accepted', title: 'OFFER ACCEPTED', badge: '' },
+  { key: 'canvassing', title: 'CANVASSING', bg: '#fff1f0', text: '#1f2937' },         // pink pastel
+  { key: 'qualification', title: 'QUALIFICATION', bg: '#f0fdf4', text: '#1f2937' },   // mint pastel
+  { key: 'quotation', title: 'QUOTATION', bg: '#fffbf0', text: '#1f2937' },           // cream pastel
+  { key: 'negotiation', title: 'NEGOTIATION', bg: '#f3f8ff', text: '#1f2937' },       // light-blue pastel
+  { key: 'offer_accepted', title: 'OFFER ACCEPTED', bg: '#f5f3ff', text: '#1f2937' }, // lilac pastel
 ]
 
 /* ---------- demo deals ---------- */
@@ -222,6 +268,9 @@ const draft = reactive({
   note: ''
 })
 const selectedDeal = ref(null)
+
+/* expanded inline card state */
+const expandedId = ref(null)
 
 /* helpers */
 function colTotal(stageKey) {
@@ -291,11 +340,19 @@ function createDeal() {
   closeModal()
 }
 
+/* expand inline (single-click) */
 function openDeal(deal) {
+  if (!deal) { expandedId.value = null; return }
+  expandedId.value = expandedId.value === deal.id ? null : deal.id
+}
+
+/* modal view (double-click or View button) */
+function openViewModal(deal) {
   selectedDeal.value = deal
   viewModal.value?.showModal?.()
 }
 function closeView() { viewModal.value?.close?.() }
+
 function markWon(deal) {
   if (!deal) return
   deal.stage = 'offer_accepted'
@@ -306,6 +363,11 @@ function markWon(deal) {
 function resetDemo() {
   deals.value = JSON.parse(JSON.stringify(initialDeals))
   rebuildColumnsMap()
+}
+
+// example message action
+function onMessage(deal) {
+  alert(`Open message composer to ${deal.owner || 'Owner'}`)
 }
 
 onMounted(() => {
@@ -351,14 +413,28 @@ onMounted(() => {
 
 /* column header - pill */
 .col-header {
-  background: #fff;
   border-radius: 10px;
   padding: 14px;
-  border: 1px solid #eef1f6;
-  box-shadow: 0 4px 12px rgba(28, 42, 66, 0.03);
+  border: 1px solid rgba(15,23,42,0.04); /* very subtle border */
+  box-shadow: 0 6px 18px rgba(28,42,66,0.03);
+  /* remove fixed white bg so inline bg works */
 }
-.col-title { font-size: 13px; font-weight:700; color:#1f2937; letter-spacing:.5px; }
-.col-sub { font-size:12px; color:#6b7280; margin-top:6px }
+
+/* make title bigger & uppercase like screenshot */
+.col-title {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+/* subtitle lighter but slightly darker than pastel */
+.col-sub {
+  font-size: 13px;
+  margin-top: 8px;
+  opacity: 0.75;
+}
+
 
 /* list area inside column */
 .col-list {
@@ -399,6 +475,47 @@ onMounted(() => {
 
 /* empty area message */
 .col-empty { color:#9aa4b2; text-align:center; padding:14px 0; }
+
+/* expanded inline area */
+.card-expanded {
+  border-top: 1px dashed rgba(15,23,42,0.06);
+  padding: 14px;
+  background: #fff;
+  margin-top: 10px;
+  border-radius: 8px;
+}
+
+.expanded-company {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:8px;
+}
+.company-name { font-weight:700; color:#0f172a; }
+.badge-days {
+  background:#fde68a;
+  color:#92400e;
+  padding:4px 8px;
+  border-radius:8px;
+  font-size:12px;
+  font-weight:700;
+}
+
+.expanded-desc {
+  color:#6b7280;
+  margin:10px 0 12px 0;
+  font-size:13px;
+  line-height:1.45;
+}
+
+.expanded-activities { list-style:none; padding:0; margin:0; border-top:1px dashed rgba(15,23,42,0.04); }
+.expanded-activities .activity-item { padding:12px 0; border-bottom:1px dashed rgba(15,23,42,0.04); }
+.activity-title { font-weight:700; color:#0f172a; }
+.activity-meta { font-size:12px; color:#6b7280; margin-top:6px; }
+
+.expanded-actions { display:flex; gap:10px; margin-top:12px; }
+.btn-call { background:#f59e0b; color:#fff; padding:8px 12px; border-radius:8px; font-weight:700; text-decoration:none; }
+.btn-message { background:#3b82f6; color:#fff; padding:8px 12px; border-radius:8px; border:none; cursor:pointer; font-weight:700; }
 
 /* responsive: on small screens, stack columns vertically */
 @media (max-width: 900px) {
