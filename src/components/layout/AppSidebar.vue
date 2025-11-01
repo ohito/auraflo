@@ -269,7 +269,7 @@ const menuGroups = [
       {
         icon: DealsPipelineIcon,
         name: "Deals Pipeline",
-        path: "/calendar",
+        path: "/deal-pipeline",
       },
       {
         icon: LeadsIcon,

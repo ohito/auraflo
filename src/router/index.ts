@@ -33,6 +33,14 @@ const router = createRouter({
       component: () => import('../views/Emails/Blasts.vue'),
       meta: { title: 'Email Blast', requiresAuth: true },
     },
+
+    // 
+    {
+      path: '/deal-pipeline',
+      name: 'Deals Pipeline',
+      component: () => import('../views/Deals/Pipelines.vue'),
+      meta: { title: 'Deals Pipeline', requiresAuth: true },
+    },
     {
       path: '/calendar',
       name: 'Calendar',

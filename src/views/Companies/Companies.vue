@@ -45,7 +45,7 @@
     <!-- content -->
     <div class="grid grid-cols-12 gap-6">
       <!-- table -->
-      <div class="col-span-12 lg:col-span-9">
+      <div class="col-span-12 lg:col-span-8">
         <div class="bg-white rounded-2xl border border-gray-200 p-4">
              <!-- START: replace search & sort card with this -->
             <div class="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">

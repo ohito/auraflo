@@ -35,7 +35,7 @@
       </div>
 
       <!-- Main grid: left = history list, right = contact preview -->
-      <div class="grid grid-cols-12 gap-6">
+      <div class="mb-6">
         <!-- history list -->
         <div class="col-span-12 lg:col-span-9">
           <div class="bg-white rounded-2xl border border-gray-200 p-4">
@@ -88,35 +88,7 @@
           </div>
         </div>
 
-        <!-- contact detail (right) -->
-        <div class="col-span-12 lg:col-span-3">
-          <div class="bg-white rounded-2xl border border-gray-200 p-5">
-            <div v-if="active" class="text-center">
-              <img :src="active.avatar" alt="avatar" class="w-24 h-24 rounded-full mx-auto mb-3 object-cover border" />
-              <h3 class="text-lg font-semibold text-slate-800">{{ active.name }}</h3>
-              <div class="text-sm text-slate-400">{{ active.company }}</div>
-
-              <div class="mt-4 flex items-center justify-center gap-3">
-                <a :href="`tel:${active.phone}`" class="p-2 rounded bg-emerald-50 text-emerald-600 text-sm">📞</a>
-                <a :href="`mailto:${active.email}`" class="p-2 rounded bg-emerald-50 text-emerald-600 text-sm">✉️</a>
-              </div>
-
-              <div class="mt-6 text-left text-sm text-slate-700">
-                <p class="mb-2"><span class="text-slate-400">Phone:</span> {{ active.phone }}</p>
-                <p class="mb-2"><span class="text-slate-400">Email:</span> {{ active.email }}</p>
-                <p class="mb-2"><span class="text-slate-400">Lead Score:</span> {{ active.score }}</p>
-                <p class="mb-2"><span class="text-slate-400">Tags:</span>
-                  <span v-for="t in active.tags" :key="t" class="ml-2 text-xs px-2 py-1 rounded bg-slate-100 text-slate-600">{{ t }}</span>
-                </p>
-                <p class="mb-2"><span class="text-slate-400">Last Contacted:</span> {{ active.last_updated }}</p>
-              </div>
-            </div>
-
-            <div v-else class="text-center text-slate-400">
-              <div class="py-10">Select a contact to view details</div>
-            </div>
-          </div>
-        </div>
+       
       </div>
 
       <!-- Email Blast modal -->
